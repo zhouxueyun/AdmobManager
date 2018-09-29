@@ -13,11 +13,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
+    let autoPresentInterstitial = true
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         
         AdmobManager.register("ca-app-pub-9973066618708289~7103954198")
-        AdmobManager.loadInterstitial(adUnitID: "ca-app-pub-9973066618708289/9012480971")
+        autoPresentInterstitial
+            ? AdmobManager.loadInterstitial(adUnitID: "ca-app-pub-9973066618708289/9012480971", autoPresentIn: self.window!.rootViewController!)
+            : AdmobManager.loadInterstitial(adUnitID: "ca-app-pub-9973066618708289/9012480971")
         
         return true
     }
@@ -38,7 +41,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-        _ = AdmobManager.presentInterstitial(from: self.window!.rootViewController!)
+        autoPresentInterstitial
+            ? nil
+            : (_ = AdmobManager.presentInterstitial(from: self.window!.rootViewController!))
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

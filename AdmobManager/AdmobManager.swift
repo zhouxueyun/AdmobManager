@@ -23,6 +23,8 @@ class AdmobManager: NSObject {
     
     // MARK: object property
     var interstitial: GADInterstitial?
+    private var autoPresentRootVC: UIViewController? = nil
+    
     var bannerViews = [GADBannerView]() // 强引用
     
     // MARK: life cycle
@@ -38,8 +40,9 @@ extension AdmobManager {
         AdmobManager.default.register(appID)
     }
     
-    static func loadInterstitial(adUnitID: String) {
-        AdmobManager.default.loadInterstitial(adUnitID: adUnitID)
+    static func loadInterstitial(adUnitID: String,
+                                 autoPresentIn rootViewController: UIViewController? = nil) {
+        AdmobManager.default.loadInterstitial(adUnitID: adUnitID, autoPresentIn: rootViewController)
     }
     
     static func presentInterstitial(from rootViewController: UIViewController) -> Bool {
@@ -62,7 +65,9 @@ extension AdmobManager {
         GADMobileAds.configure(withApplicationID: appID)
     }
     
-    func loadInterstitial(adUnitID: String) {
+    func loadInterstitial(adUnitID: String,
+                          autoPresentIn rootViewController: UIViewController? = nil) {
+        self.autoPresentRootVC = rootViewController
         self.interstitial = self.createAndLoadInterstitial(adUnitID: adUnitID)
     }
     
@@ -137,10 +142,16 @@ extension AdmobManager: GADInterstitialDelegate {
     
     func interstitialDidReceiveAd(_ ad: GADInterstitial) {
         print("interstitialDidReceiveAd")
+        if self.autoPresentRootVC != nil {
+            ad.present(fromRootViewController: self.autoPresentRootVC!)
+        }
     }
     
     func interstitial(_ ad: GADInterstitial, didFailToReceiveAdWithError error: GADRequestError) {
         print("interstitial:didFailToReceiveAdWithError: \(error.localizedDescription)")
+        if autoPresentRootVC != nil { // 如果选中自动弹出，则不自动加载下一次请求
+            return
+        }
         if let unitID = ad.adUnitID {
             DispatchQueue.main.asyncAfter(deadline: .now() + AdmobManager.interstitialFailedRetryInterval) {
                 self.interstitial = self.createAndLoadInterstitial(adUnitID: unitID)
@@ -150,6 +161,9 @@ extension AdmobManager: GADInterstitialDelegate {
     
     func interstitialDidDismissScreen(_ ad: GADInterstitial) {
         print("interstitialDidDismissScreen")
+        if autoPresentRootVC != nil { // 如果选中自动弹出，则不自动加载下一次请求
+            return
+        }
         if let unitID = ad.adUnitID {
             self.interstitial = self.createAndLoadInterstitial(adUnitID: unitID)
         }
